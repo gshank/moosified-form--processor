@@ -1,0 +1,36 @@
+--- 
+abstract: validate and process form data
+author: 
+  - Bill Moseley - with *much* help from John Siracusa
+build_requires: 
+  Test::More: 0
+distribution_type: module
+generated_by: Module::Install version 0.68
+license: perl
+meta-spec: 
+  url: http://module-build.sourceforge.net/META-spec-v1.3.html
+  version: 1.3
+name: Form-Processor
+no_index: 
+  directory: 
+    - inc
+    - t
+recommends: 
+  Date::Manip: 5.44
+  DateTime: 0.34
+  DateTime::Format::DateManip: 0.04
+  Digest::MD5: 2.36
+  Email::Valid: 0.179
+  File::Temp: 0.16
+  HTML::Tidy: 1.06
+  Net::CIDR: 0.11
+  Template: 2.19
+requires: 
+  Locale::Maketext: 1.09
+  Module::Find: 0.05
+  Moose: 0.59
+  MooseX::AttributeHelpers: 0.14
+  Scalar::Util: 1.18
+  UNIVERSAL::require: 0
+tests: t/01app.t t/02pod.t t/03podcoverage.t t/auto_fields.t t/bad_item_id.t t/book.t t/book_auto.t t/book_html.t t/book_m2m.t t/borrower.t t/dbic_accessor.t t/dependency.t t/field.t t/field_counter.t t/field_select.t t/fif.t t/form_processor.t t/init_object.t t/load_field.t t/load_form.t t/model.t t/model_dbic.t t/multiple_forms.t t/order.t t/unique.t t/value_format.t t/Field/10-Field-Boolean.t t/Field/10-Field-Checkbox.t t/Field/10-Field-CIDR_List.t t/Field/10-Field-Date_yyyy_mm_dd.t t/Field/10-Field-DateTime.t t/Field/10-Field-DateTimeDMYHM.t t/Field/10-Field-DateTimeDMYHM2.t t/Field/10-Field-DateTimeManip.t t/Field/10-Field-Email.t t/Field/10-Field-FutureDate.t t/Field/10-Field-Hidden.t t/Field/10-Field-Hour.t t/Field/10-Field-HtmlArea.t t/Field/10-Field-Integer.t t/Field/10-Field-IntRange.t t/Field/10-Field-MD5_Password.t t/Field/10-Field-Minute.t t/Field/10-Field-Money.t t/Field/10-Field-Month.t t/Field/10-Field-MonthDay.t t/Field/10-Field-MonthName.t t/Field/10-Field-Multiple.t t/Field/10-Field-OneToTen.t t/Field/10-Field-Password.t t/Field/10-Field-Phone.t t/Field/10-Field-PosInteger.t t/Field/10-Field-Readonly.t t/Field/10-Field-Second.t t/Field/10-Field-Select.t t/Field/10-Field-Template.t t/Field/10-Field-Text.t t/Field/10-Field-TextArea.t t/Field/10-Field-Upload.t t/Field/10-Field-URL.t t/Field/10-Field-Username.t t/Field/10-Field-USPhone.t t/Field/10-Field-USZipcode.t t/Field/10-Field-Weekday.t t/Field/10-Field-WeekdayStr.t t/Field/10-Field-Year.t
+version: 0.20000_01

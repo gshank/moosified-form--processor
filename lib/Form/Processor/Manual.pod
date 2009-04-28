@@ -1,0 +1,266 @@
+=head1 NAME
+
+Form::Processor
+
+=head1 SYNOPSIS
+
+You need to create a form class, templates, and call F::P from a controller.
+
+Create a Form, subclassed from Form::Processor::Model::DBIC
+
+    package MyApp:Form::User;
+    use strict;
+    use base 'Form::Processor::Model::DBIC';
+
+    # Associate this form with a DBIx::Class result class
+    sub object_class { 'User' } # Where 'User' is the DBIC source_name 
+
+    # Define the fields that this form will operate on
+    # Field names must be column or relationship names in your
+    # DBIx::Class result class
+    sub profile {
+        return {
+            fields => {
+                name        => {
+                   type => 'Text',
+                   label => 'Name:',
+                   required => 1,
+                   noupdate => 1,
+                },
+                age         => {
+                    type => 'PosInteger',
+                    label    => 'Age:',
+                    required => 1,
+                },
+                sex         => {
+                    type => 'Select',
+                    label => 'Gender:',
+                    required => 1,
+                },
+                birthdate   => '+MyApp::Field::Date', # customized field class
+                hobbies     =>  {
+                    type => 'Multiple',
+                    size => 5,
+                },
+                address     => 'Text',
+                city        => 'Text',
+                state       => 'Select',
+            },
+
+            dependency => [
+                ['address', 'city', 'state'],
+            ],
+        };
+
+Then in your template:
+
+For an input field:
+
+   <p>
+   [% f = form.field('address') %]
+   <label class="label" for="[% f.name %]">[% f.label || f.name %]</label>
+   <input type="text" name="[% f.name %]" id="[% f.name %]" value="[ f.fif %]">
+   </p>
+
+The value can come from the hash returned by $form->fif, from the 'fif'
+attribute of the field, or can be supplied by FillInForm.
+Plain HTML works fine for a simple input field if you use FillInForm to
+supply the value:
+
+   <p>
+   <label class="label" for="address">Address:</label>
+   <input type="text" name="address" id="address">
+   </p>
+   
+For a select list provide a relationship name as the field name, or provide
+an options_<field_name> subroutine in the form. FillInForm alone is not
+enough for select fields, since you need to access the field 'options'.
+(field attributes: sort_order, label_column, active_column). TT example:
+
+   <p>
+   [% f = form.field('sex') %]
+   <label class="label" for="[% f.name %]">[% f.label || f.name %]</label>
+   <select name="[% f.name %]">
+     [% FOR option IN f.options %]
+       <option value="[% option.value %]" [% IF option.value == f.value %]selected="selected"[% END %]>[% option.label | html %]</option>
+     [% END %] 
+   </select>
+   </p>
+
+A multiple select list where 'hobbies' is the 'many_to_many'
+a 'many_to_many' pseudo-relationship. (field attributes: sort_order, label_column,
+active_column).
+
+   <p>
+   [% f = form.field('hobbies') %]
+   <label class="label" for="[% f.name %]">[% f.label || f.name %]</label>
+   <select name="[% f.name %]" multiple="multiple" size="[% f.size %]">
+     [% FOR option IN f.options %]
+       <option value="[% option.value %]" [% FOREACH selval IN f.value %][% IF selval == option.value %]selected="selected"[% END %][% END %]>[% option.label | html %]</option>
+     [% END %] 
+   </select>
+   </p>
+
+For a complex, widget-based TT setup, see the examples directory in the
+L<Catalyst::Plugin::Form::Processor> CPAN download.
+ 
+Then in a Catalyst controller (with Catalyst::Controller::Form::Processor):
+
+    package MyApp::Controller::User;
+    use strict;
+    use warnings;
+    use base 'Catalyst::Controller::Form::Processor';
+
+    # Create or edit
+    sub edit : Local {
+        my ( $self, $c, $user_id ) = @_;
+        $c->stash->{template} = 'user/edit.tt'; 
+        # Validate and insert/update database. Args = pk, form name
+        return unless $self->update_from_form( $user_id, 'User' );
+        # Form validated.
+        $c->stash->{user} = $c->stash->{form}->item;
+        $c->res->redirect($c->uri_for('profile'));
+    }
+
+With the Catalyst controller the schema is set from the model_name config
+options, ($c->model($model_name)...), but it can also be set by passing 
+in the schema on "new", or setting with $form->schema($schema).
+If you want to use FillInForm to fill in values instead of the field's
+fif attribute, use L<Catalyst::Controller::Form::Processor::FifEnd>.
+
+
+=head1 DESCRIPTION
+
+Form::Processor is a form handling class primarily useful for getting HMTL form
+data into the database. It provides attributes on fields that can be used
+for creating a set of widgets and highly automatic templates, but does
+not actually create the templates themselves. There is an illustrative
+example of a widgetized template setup in the L<Catalyst::Plugin::Form::Processor>
+distribution, and it should be fairly easy to write utilities or scripts 
+to create templates automatically. And cut-and-paste always works...
+
+The DBIC & CDBI  models will save form fields automatically to the database, will
+retrieve selection lists from the database (with type => 'Select' and a 
+fieldname containing a single relationship, or type => 'Multiple' and a
+many_to_many relationship), and will save the selected values (one value for 
+'Select', multiple values in a mapping table for a 'Multiple' field). 
+
+The 'form' is a Perl subclass of the model class, and in it you define
+your fields (with many possible attributes), and initialization
+and validation routines. Because it's a Perl class, you have a lot of 
+flexibility.
+
+You can, of course, define your own L<Form::Processor::Field> classes to
+create your own field types, and perform specialized validation. And you
+can subclass the methods in Form::Processor::Model::DBIC and 
+Form::Processor.
+
+The L<Catalyst::Controller::Form::Processor> package includes a working 
+example using a SQLite database and a number of forms. The templates are 
+straightforward and unoptimized to make it easier to see what they're doing.
+
+=head1 Combined reference for Form::Processor
+
+Form::Processor has a lot of options and many ways to customize your forms.
+More complete documentation can be found at L<Form::Processor>, 
+L<Form::Processor::Field>, L<Catalyst::Plugin::Form::Processor>, 
+L<Form::Processor::Model::CDBI>, L<Form::Processor::Model::DBIC>, 
+L<Catalyst::Controller::Form::Processor>,
+and in the individual field classes.
+
+=head2 Attributes for fields defined in your form:
+
+   name          Field name. Must be the same as database column name or rel
+   type          Field type. From a F::P::Field class: 'Text', 'Select', etc
+   required      Field is required
+   required_message  If this field is required, the message to display on failure 
+   id            Useful for javascript that requires unique id. Set in Field.
+   label         Text label. Not used by F::P, but useful in templates 
+   order         Set the order for fields. Used by sorted_fields, templates. 
+   widget        Used by templates to decide widget usage. Set by field classes.
+   style         Style to use for css formatting. Not used by F::P; for templates.
+   title         For HTML titles. Not used by F::P.
+   value_format  Sprintf format to use when converting input to value
+   password      Remove from params and do not display in forms. 
+   disabled      HTML hint to not do updates (for templates) Init: 0
+   readonly      HTML hint to make the field readonly (for templates) Init: 0 
+   clear         Don't validate and remove from database
+   noupdate      Don't update this field in the database
+   writeonly     Do not call field class's "format_value" routine. 
+   errors        Errors associated with this field 
+   label_column  Select lists: column to use for labels (default: name)
+   active_column Select lists: which values to list
+   sort_order    Select lists: column to use for sorting (default: label_column)
+   sub_form      The field is made up of a sub-form (only dates at this point)
+   size          Text & select fields. Validated for text.
+   minlength     Text fields. Used in validation
+   range_start   Range start for number fields 
+   range_end     Range end for number fields    
+   unique        Field should be unique in the database 
+   unique_message If field is not unique, error message.
+
+=head2 Field attributes not set in a user form
+
+These attributes are usually accessed in a subroutine or in a template.
+
+   init_value    Initial value from the database (or see init_value_$fieldname) 
+   value         The value of your field. Initially, init_value, then from input.
+   input         Input value from parameter or initial value from database
+   fif           For filling in the value in a form (from input or value)
+   options       Select lists. Sorted array of hashes, keys: "value", "label"
+
+=head2 Other form settings
+
+   dependency    Array of arrays of field names. If one name has a value, all
+                       fields in the list are set to 'required'
+   unique        Arrayref of field names that should be unique in db
+                     or Hashref that also sets message 
+
+=head2 Subroutines for your form (not subclassed)
+
+   object_class             Required for Form::Processor::Model::DBIC (& CDBI)
+   schema                   If you're not using the schema from a Catalyst model
+   options_$fieldname       Provides a list of key value pairs for select lists
+   validate_$fieldname      Validation routine for field 
+   init_value_$fieldname    Overrides initial value for the field
+   cross_validate           For validation after individual fields are validated 
+   active_column            For all select lists in the form
+   init_object              Provide different but similar object to init form 
+                               such as default values (field names must match)
+   field_counter            Increment in templates (see Field & C::P::F::P example)
+   Plus any subroutine you care to write...
+   
+=head2 Methods you might want to subclass from Form::Processor::Model::DBIC
+
+   model_validate    Add additional database type validation
+   update_model      To add additional actions on update
+   guess_field_type  To create better field type assignment for auto forms 
+     
+=head2 Particularly useful in a template
+
+   errors            [% IF form.errors %]
+   error_fields      [% FOREACH field IN form.error_fields %]
+   error_field_names [% FOREACH name IN form.error_field_names %]
+
+   [% FOR field IN form.error_fields %]
+     [% FOR form_error IN field.errors %]
+       <p><span class='error' id=error>[% form_error %] </span></p>
+     [% END %]
+   [% END %]
+
+   sorted_fields     [% FOREACH field IN form.sorted_fields %]
+   uuid              subroutine that returns a uuid
+   fif               value="[% form.fif.title %]"
+   params            Same as fif, but password fields aren't stripped
+   
+=head2 L<Form::Processor::Field> subroutines to subclass in a Field class
+
+   validate          Main part of Field subclasses. Generic validation that
+                       applies to all fields of this type.
+   validate_field    If you want to override the validation in F::P::Field
+   trim_value        If you don't want beginning and ending whitespace trimmed
+   input_to_value    To process the field before storing, after validation
+   Add your own field attributes in your custom Field classes.
+    
+=cut
+
